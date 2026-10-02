@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedControl | Seguimiento inteligente</title>
+    <link rel="stylesheet" href="MedControl.css">
+</head>
+
+<body>
+    <div class="app">
+        <aside>
+            <div class="brand">
+                <div class="logo">+</div>
+                <div>
+                    <b>MedControl</b>
+                </div>
+            </div>
+
+            <div class="section-label">MENÚ PRINCIPAL</div>
+
+            <nav>
+                <button class="nav active" data-view="Resumen">
+                    <b>Resumen</b>
+                </button>
+                <button class="nav" data-view="Mis tratamientos">
+                    <b>Mis tratamientos</b>
+                </button>
+                <button class="nav" data-view="Dosis">
+                    <b>Seguimiento de dosis</b>
+                </button>
+                <button class="nav" data-view="Medicamentos">
+                    <b>Medicamentos</b>
+                </button>
+                <button class="nav" data-view="Alertas">
+                    <b>Alertas</b>
+                </button>
+            </nav>
+
+            <div class="support">
+                <small>¿NECESITAS AYUDA?</small>
+                <p>Contacta con tu institución o personal autorizado.</p>
+            </div>
+
+            <div class="profile">
+                <div class="avatar">JC</div>
+                <div>
+                    <b>Juan Carlos</b>
+                    <small>Paciente</small>
+                </div>
+            </div>
+        </aside>
+
+        <main>
+            <header>
+                <div class="crumb">MEDCONTROL / <strong>RESUMEN</strong></div>
+
+                <div class="header-buttons">
+                    <button class="icon-button" id="notifications-button" title="Notificaciones" aria-label="Abrir notificaciones">♢</button>
+                    <button class="icon-button" id="settings-button" title="Configuración" aria-label="Abrir configuración">⚙</button>
+                    <div class="utility-panel" id="utility-panel" hidden></div>
+                </div>
+            </header>
+
+            <section class="welcome">
+                <div>
+                    <h1>Buenos días, Juan.</h1>
+                    <p>Aquí tienes el estado de tus tratamientos.</p>
+                </div>
+                <div class="date" id="today-date">Cargando...</div>
+            </section>
+
+            <section class="stats">
+                <div class="stat">
+                    <label>Adherencia total</label>
+                    <strong>90% <em>+4.2%</em></strong>
+                </div>
+                <div class="stat">
+                    <label>Dosis para hoy</label>
+                    <strong>3 <em>de 4</em></strong>
+                </div>
+                <div class="stat">
+                    <label>Tratamientos activos</label>
+                    <strong>02 <em>estables</em></strong>
+                </div>
+                <div class="stat">
+                    <label>Alertas pendientes</label>
+                    <strong>02 <em style="color:var(--orange)">revisar</em></strong>
+                </div>
+            </section>
+
+            <div class="grid">
+                <section class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2>Mis tratamientos</h2>
+                            <p>Tratamientos activos y próximas dosis</p>
+                        </div>
+                        <button class="link">Ver todos →</button>
+                    </div>
+
+                    <div class="actions">
+                        <button class="primary" id="dose-button">+ Registrar dosis</button>
+                        <select class="field" id="filter">
+                            <option>Todos los tratamientos</option>
+                            <option>Activos</option>
+                            <option>Por vencer</option>
+                        </select>
+                    </div>
+
+                    <div class="treatment-list">
+                        <div class="treatment">
+                            <div class="medicine">
+                                <span class="medicine-icon">L</span>
+                                Losartán 50 mg
+                            </div>
+                            <div class="dose">1 comprimido · 08:00</div>
+                            <div class="status">Tomada hoy</div>
+                            <button class="link">Detalle</button>
+                        </div>
+
+                        <div class="treatment">
+                            <div class="medicine">
+                                <span class="medicine-icon" style="background:#fff1d9;color:#be7a10">M</span>
+                                Metformina 850 mg
+                            </div>
+                            <div class="dose">1 comprimido · 20:00</div>
+                            <div class="status warning">Pendiente</div>
+                            <button class="link">Detalle</button>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="side">
+                    <section class="card adherence">
+                        <div class="card-header">
+                            <div>
+                                <h2>Mi adherencia</h2>
+                                <p>Últimos 30 días</p>
+                            </div>
+                            <button class="link">Detalles</button>
+                        </div>
+
+                        <div class="circle">
+                            <b>90%</b>
+                            <small>ADHERENCIA</small>
+                        </div>
+
+                        <div class="weeks">
+                            <div class="week">
+                                <span>Semana 1</span>
+                                <b>94%</b>
+                            </div>
+                            <div class="week">
+                                <span>Semana 2</span>
+                                <b>90%</b>
+                            </div>
+                            <div class="week">
+                                <span>Semana 3</span>
+                                <b style="color:var(--orange)">82%</b>
+                            </div>
+                            <div class="week">
+                                <span>Semana 4</span>
+                                <b>88%</b>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-header">
+                            <div>
+                                <h2>Alertas recientes</h2>
+                                <p>Requieren tu atención</p>
+                            </div>
+                            <button class="link">Ver todas →</button>
+                        </div>
+
+                        <div class="alert-list">
+                            <div class="alert">
+                                <i class="dot"></i>
+                                <div>
+                                    <b>Stock bajo</b>
+                                    <small>Losartán · quedan 12 días</small>
+                                </div>
+                            </div>
+
+                            <div class="alert">
+                                <i class="dot red"></i>
+                                <div>
+                                    <b>Dosis atrasada</b>
+                                    <small>Metformina · ayer a las 20:00</small>
+                                </div>
+                            </div>
+
+                            <div class="alert">
+                                <i class="dot green"></i>
+                                <div>
+                                    <b>Todo en orden</b>
+                                    <small>Última sincronización hace 2 h</small>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <p style="color:var(--muted);font-size:10px;margin-top:20px">
+                DATOS DE DEMOSTRACIÓN · MEDCONTROL TE AYUDA A ORGANIZAR TU TRATAMIENTO, PERO NO SUSTITUYE LA INDICACIÓN DE TU PROFESIONAL DE SALUD.
+            </p>
+        </main>
+    </div>
+
+    <script src="MedControl.js"></script>
+</body>
+</html>
+
