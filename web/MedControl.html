@@ -8,7 +8,38 @@
 </head>
 
 <body>
-    <div class="app">
+    <section class="login-screen" id="login-screen">
+        <div class="login-card">
+            <div class="brand login-brand">
+                <div class="logo">+</div>
+                <b>MedControl</b>
+            </div>
+            <h1>Iniciar sesión</h1>
+            <p>Ingresa con tu correo y contraseña.</p>
+
+            <form id="login-form">
+                <label class="login-field">
+                    Correo electrónico
+                    <input id="login-email" name="email" type="email" autocomplete="username" required>
+                </label>
+                <label class="login-field">
+                    Contraseña
+                    <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+                </label>
+                <button class="primary login-submit" type="submit">Ingresar</button>
+                <p class="login-error" id="login-error" role="alert" hidden></p>
+            </form>
+
+            <div class="demo-credentials">
+                <b>Accesos de demostración</b>
+                <small>Usuario: usuario@medcontrol.demo · usuario123</small>
+                <small>Administrador: admin@medcontrol.demo · admin123</small>
+                <small>Prototipo de demostración: no utiliza autenticación segura.</small>
+            </div>
+        </div>
+    </section>
+
+    <div class="app" id="app" hidden>
         <aside>
             <div class="brand">
                 <div class="logo">+</div>
@@ -35,19 +66,18 @@
                 <button class="nav" data-view="Alertas">
                     <b>Alertas</b>
                 </button>
+                <button class="nav" data-view="Administración" data-role="admin" hidden>
+                    <b>Gestión del sistema</b>
+                </button>
             </nav>
 
-            <div class="support">
-                <small>¿NECESITAS AYUDA?</small>
-                <p>Contacta con tu institución o personal autorizado.</p>
-            </div>
-
             <div class="profile">
-                <div class="avatar">JC</div>
+                <div class="avatar" id="profile-avatar">JC</div>
                 <div>
-                    <b>Juan Carlos</b>
-                    <small>Paciente</small>
+                    <b id="profile-name">Juan Carlos</b>
+                    <small id="profile-role">Usuario</small>
                 </div>
+                <button class="logout-button" id="logout-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">Salir</button>
             </div>
         </aside>
 
@@ -96,7 +126,7 @@
                             <h2>Mis tratamientos</h2>
                             <p>Tratamientos activos y próximas dosis</p>
                         </div>
-                        <button class="link">Ver todos →</button>
+                        <button class="link">Ver todos</button>
                     </div>
 
                     <div class="actions">
@@ -172,7 +202,7 @@
                                 <h2>Alertas recientes</h2>
                                 <p>Requieren tu atención</p>
                             </div>
-                            <button class="link">Ver todas →</button>
+                            <button class="link">Ver todas</button>
                         </div>
 
                         <div class="alert-list">
@@ -213,4 +243,3 @@
     <script src="MedControl.js"></script>
 </body>
 </html>
-

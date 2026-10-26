@@ -1,4 +1,16 @@
 const DOM = {
+    login: {
+        screen: document.querySelector('#login-screen'),
+        form: document.querySelector('#login-form'),
+        email: document.querySelector('#login-email'),
+        password: document.querySelector('#login-password'),
+        error: document.querySelector('#login-error'),
+        logoutButton: document.querySelector('#logout-button'),
+        profileAvatar: document.querySelector('#profile-avatar'),
+        profileName: document.querySelector('#profile-name'),
+        profileRole: document.querySelector('#profile-role'),
+        adminNav: document.querySelector('.nav[data-role="admin"]'),
+    },
     nav: {
         items: document.querySelectorAll('.nav'),
     },
@@ -18,6 +30,8 @@ const DOM = {
         grid: document.querySelector('.grid'),
     }
 };
+
+let currentRole = null;
 
 /**
  * @returns {string} Formato: "30 de agosto"
@@ -43,7 +57,8 @@ const VIEW_TITLES = {
     'Mis tratamientos': ['Tus tratamientos', 'Consulta tus medicamentos, horarios y duración.'],
     'Dosis': ['Seguimiento de dosis', 'Registra cada toma y mejora tu adherencia.'],
     'Medicamentos': ['Tus medicamentos', 'Consulta disponibilidad, stock y vencimientos.'],
-    'Alertas': ['Alertas y recordatorios', 'Revisa los avisos importantes de tu tratamiento.']
+    'Alertas': ['Alertas y recordatorios', 'Revisa los avisos importantes de tu tratamiento.'],
+    'Administración': ['Panel de administración', 'Gestiona usuarios, tratamientos y alertas del sistema.']
 };
 
 function generateTreatmentsStats() {
@@ -153,19 +168,19 @@ function generateMedicamentosContent() {
                     <div class="medicine"><span class="medicine-icon">L</span>Losartán · 50 mg</div>
                     <div class="dose">Comprimidos · stock 24</div>
                     <div class="status">Vence 10/2027</div>
-                    <button class="link">Detalle</button>
+                    <button class="link" data-detail="Losartán · 50 mg">Detalle</button>
                 </div>
                 <div class="treatment">
                     <div class="medicine"><span class="medicine-icon" style="background:#fff1d9;color:#be7a10">M</span>Metformina · 850 mg</div>
                     <div class="dose">Comprimidos · stock 12</div>
                     <div class="status warning">Vence 11/2026</div>
-                    <button class="link">Detalle</button>
+                    <button class="link" data-detail="Metformina · 850 mg">Detalle</button>
                 </div>
                 <div class="treatment">
                     <div class="medicine"><span class="medicine-icon" style="background:#fde3df;color:#c95b4b">R</span>Rivaroxabán · 20 mg</div>
                     <div class="dose">Comprimidos · stock 06</div>
                     <div class="status warning">Vence 09/2026</div>
-                    <button class="link">Detalle</button>
+                    <button class="link" data-detail="Rivaroxabán · 20 mg">Detalle</button>
                 </div>
             </div>
         </section>
@@ -216,6 +231,39 @@ function generateAlertasContent() {
     `.trim();
 }
 
+function generateAdminStats() {
+    return `
+        <div class="stat"><label>Usuarios registrados</label><strong>128 <em>en sistema</em></strong></div>
+        <div class="stat"><label>Tratamientos activos</label><strong>86 <em>en seguimiento</em></strong></div>
+        <div class="stat"><label>Alertas pendientes</label><strong>12 <em style="color:var(--orange)">revisar</em></strong></div>
+        <div class="stat"><label>Administradores</label><strong>03 <em>autorizados</em></strong></div>
+    `.trim();
+}
+
+function generateAdminContent() {
+    return `
+        <section class="card">
+            <div class="card-header">
+                <div><h2>Actividad del sistema</h2><p>Resumen de la plataforma · datos de demostración</p></div>
+            </div>
+            <div class="alert-list">
+                <div class="alert"><i class="dot green"></i><div><b>Usuarios</b><small>128 cuentas registradas · 114 activas este mes</small></div></div>
+                <div class="alert"><i class="dot"></i><div><b>Tratamientos</b><small>86 tratamientos activos requieren seguimiento</small></div></div>
+                <div class="alert"><i class="dot red"></i><div><b>Alertas pendientes</b><small>12 avisos esperan revisión del equipo</small></div></div>
+            </div>
+        </section>
+        <div class="side">
+            <section class="card">
+                <div class="card-header"><div><h2>Acceso administrativo</h2><p>Sesión activa</p></div></div>
+                <div class="weeks">
+                    <div class="week"><span>Rol</span><b>Administrador</b></div>
+                    <div class="week"><span>Permisos</span><b style="color:var(--green)">Gestión completa</b></div>
+                </div>
+            </section>
+        </div>
+    `.trim();
+}
+
 const PANEL_CONTENT = {
     'Mis tratamientos': {
         stats: generateTreatmentsStats(),
@@ -232,6 +280,10 @@ const PANEL_CONTENT = {
     'Alertas': {
         stats: generateAlertasStats(),
         content: generateAlertasContent()
+    },
+    'Administración': {
+        stats: generateAdminStats(),
+        content: generateAdminContent()
     }
 };
 
@@ -246,6 +298,9 @@ const ORIGINAL_STATE = {
  * @param {string} viewName - Nombre de la sección
  */
 function updateView(viewName) {
+    if (currentRole === 'administrador' && viewName !== 'Administración') return;
+    if (currentRole !== 'administrador' && viewName === 'Administración') return;
+
     // Actualizar encabezado de navegación
     DOM.header.crumb.innerHTML = `MEDCONTROL / <strong>${viewName.toUpperCase()}</strong>`;
     
@@ -277,6 +332,62 @@ function setupNavigation() {
             const viewName = item.dataset.view;
             updateView(viewName);
         });
+    });
+}
+
+function showApplication(role) {
+    currentRole = role;
+    DOM.login.screen.hidden = true;
+    document.querySelector('#app').hidden = false;
+    DOM.nav.items.forEach(item => {
+        const isAdminItem = item.dataset.role === 'admin';
+        item.hidden = role === 'administrador' ? !isAdminItem : isAdminItem;
+    });
+    DOM.login.profileAvatar.textContent = role === 'administrador' ? 'AD' : 'JC';
+    DOM.login.profileName.textContent = role === 'administrador' ? 'Administrador' : 'Juan Carlos';
+    DOM.login.profileRole.textContent = role === 'administrador' ? 'Administrador' : 'Usuario';
+
+    const initialView = role === 'administrador' ? 'Administración' : 'Resumen';
+    const initialNav = document.querySelector(`.nav[data-view="${initialView}"]`);
+    if (initialNav) {
+        initialNav.click();
+    }
+}
+
+function setupLogin() {
+    DOM.login.form.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const email = DOM.login.email.value.trim().toLowerCase();
+        const password = DOM.login.password.value;
+        const accounts = {
+            'usuario@medcontrol.demo': { password: 'usuario123', role: 'usuario' },
+            'admin@medcontrol.demo': { password: 'admin123', role: 'administrador' }
+        };
+        const account = accounts[email];
+
+        if (!account || account.password !== password) {
+            DOM.login.error.textContent = 'El correo o la contraseña son incorrectos.';
+            DOM.login.error.hidden = false;
+            return;
+        }
+
+        DOM.login.error.hidden = true;
+        DOM.login.password.value = '';
+        showApplication(account.role);
+    });
+
+    DOM.login.form.addEventListener('input', () => {
+        DOM.login.error.hidden = true;
+    });
+
+    DOM.login.logoutButton.addEventListener('click', () => {
+        currentRole = null;
+        DOM.login.form.reset();
+        DOM.login.error.hidden = true;
+        DOM.login.screen.hidden = false;
+        document.querySelector('#app').hidden = true;
+        DOM.login.adminNav.hidden = true;
     });
 }
 
@@ -328,6 +439,106 @@ function setupUtilityPanel() {
     }
 }
 
+function renderMedicineDetail(detailName) {
+    const details = {
+        'Losartán · 50 mg': {
+            title: 'Losartán 50 mg',
+            lines: [
+                '<b>Presentación</b><br><small>Comprimidos · 30 unidades</small>',
+                '<b>Horario</b><br><small>08:00 · cada 24 h</small>',
+                '<b>Stock</b><br><small>24 unidades · vence 10/2027</small>'
+            ]
+        },
+        'Metformina · 850 mg': {
+            title: 'Metformina 850 mg',
+            lines: [
+                '<b>Presentación</b><br><small>Comprimidos · 60 unidades</small>',
+                '<b>Horario</b><br><small>20:00 · cada 24 h</small>',
+                '<b>Stock</b><br><small>12 unidades · vence 11/2026</small>'
+            ]
+        },
+        'Rivaroxabán · 20 mg': {
+            title: 'Rivaroxabán 20 mg',
+            lines: [
+                '<b>Presentación</b><br><small>Comprimidos · 28 unidades</small>',
+                '<b>Horario</b><br><small>20:00 · según indicación médica</small>',
+                '<b>Stock</b><br><small>6 unidades · vence 09/2026</small>'
+            ]
+        }
+    };
+
+    const detail = details[detailName] || {
+        title: detailName || 'Detalle',
+        lines: ['<b>Información</b><br><small>Sin datos adicionales</small>']
+    };
+
+    return `
+        <h3>${detail.title}</h3>
+        ${detail.lines.map(item => `<p>${item}</p>`).join('')}
+    `;
+}
+
+function resolveDetailName(button) {
+    if (button.dataset.detail) {
+        return button.dataset.detail;
+    }
+
+    const medicineNode = button.closest('.treatment')?.querySelector('.medicine');
+    if (medicineNode) {
+        const value = medicineNode.textContent.replace(/\s+/g, ' ').trim();
+        return value.replace(/^[A-Z]\s*/, '').trim();
+    }
+
+    return 'Losartán · 50 mg';
+}
+
+function handleActionButtonClick(event) {
+    const button = event.target.closest('.link, .primary');
+    if (!button || button.id === 'dose-button') return;
+
+    const label = button.textContent.trim().toLowerCase();
+
+    if (label.includes('ver todas')) {
+        const alertsButton = document.querySelector('.nav[data-view="Alertas"]');
+        if (alertsButton) {
+            alertsButton.click();
+        }
+        return;
+    }
+
+    if (label.includes('ver todos')) {
+        const treatmentsButton = document.querySelector('.nav[data-view="Mis tratamientos"]');
+        if (treatmentsButton) {
+            treatmentsButton.click();
+        }
+        return;
+    }
+
+    if (label.includes('detalle') || label.includes('detalles')) {
+        const panel = document.querySelector('#utility-panel');
+        if (panel) {
+            const detailName = resolveDetailName(button);
+            panel.dataset.type = 'notifications';
+            panel.innerHTML = renderMedicineDetail(detailName);
+            panel.hidden = false;
+        }
+        return;
+    }
+
+    if (label.includes('resolver') || label.includes('revisar')) {
+        button.textContent = '✓ Revisado';
+        button.style.color = '#167d52';
+        return;
+    }
+
+    if (label.includes('nuevo tratamiento') || label.includes('añadir medicamento') || label.includes('registrar')) {
+        button.textContent = '✓ Enviado';
+        button.style.opacity = '0.9';
+    }
+}
+
+let actionHandlersBound = false;
+
 function setupSpecialButtons() {
     // Botón para registrar dosis
     const doseButton = document.querySelector('#dose-button');
@@ -337,18 +548,23 @@ function setupSpecialButtons() {
             event.target.style.background = '#167d52';
         });
     }
-    
+
     // Filtro de tratamientos
     const filter = document.querySelector('#filter');
     if (filter) {
         filter.addEventListener('change', event => {
             const cardTitle = document.querySelector('.card h2');
             if (cardTitle) {
-                cardTitle.textContent = event.target.value === 'Todos los tratamientos' 
-                    ? 'Mis tratamientos' 
+                cardTitle.textContent = event.target.value === 'Todos los tratamientos'
+                    ? 'Mis tratamientos'
                     : event.target.value;
             }
         });
+    }
+
+    if (!actionHandlersBound) {
+        document.addEventListener('click', handleActionButtonClick);
+        actionHandlersBound = true;
     }
 }
 
@@ -357,6 +573,7 @@ function setupSpecialButtons() {
 */
 function initializeApp() {
     updateTodayDate();
+    setupLogin();
     setupNavigation();
     setupUtilityPanel();
     setupSpecialButtons();
