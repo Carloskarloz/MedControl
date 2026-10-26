@@ -5,6 +5,18 @@ const DOM = {
         email: document.querySelector('#login-email'),
         password: document.querySelector('#login-password'),
         error: document.querySelector('#login-error'),
+        intro: document.querySelector('#login-intro'),
+        registerToggle: document.querySelector('#show-register-button'),
+        registerForm: document.querySelector('#register-form'),
+        registerName: document.querySelector('#register-name'),
+        registerEmail: document.querySelector('#register-email'),
+        registerPhone: document.querySelector('#register-phone'),
+        registerRut: document.querySelector('#register-rut'),
+        registerPassword: document.querySelector('#register-password'),
+        registerPasswordConfirm: document.querySelector('#register-password-confirm'),
+        registerError: document.querySelector('#register-error'),
+        loginToggle: document.querySelector('#show-login-button'),
+        demoCredentials: document.querySelector('.demo-credentials'),
         logoutButton: document.querySelector('#logout-button'),
         profileAvatar: document.querySelector('#profile-avatar'),
         profileName: document.querySelector('#profile-name'),
@@ -32,6 +44,36 @@ const DOM = {
 };
 
 let currentRole = null;
+let currentView = 'Resumen';
+const dailyDoses = {
+    taken: 3,
+    total: 4,
+    metforminTaken: false
+};
+const alertState = {
+    doseResolved: false,
+    stockResolved: false
+};
+
+function renderRoleNotifications() {
+    if (currentRole === 'usuario') {
+        const notifications = [];
+        if (!alertState.doseResolved) {
+            notifications.push('<p><b>Dosis atrasada</b><br><small>Metformina · ayer a las 20:00</small></p>');
+        }
+        if (!alertState.stockResolved) {
+            notifications.push('<p><b>Stock bajo</b><br><small>Losartán · quedan 12 días</small></p>');
+        }
+
+        return `<h3>Notificaciones</h3>${notifications.join('') || '<p><b>Todo resuelto</b><br><small>No tienes alertas pendientes.</small></p>'}`;
+    }
+
+    return `
+        <h3>Notificaciones administrativas</h3>
+        <p><b>Alertas pendientes</b><br><small>12 avisos esperan revisión del equipo.</small></p>
+        <p><b>Seguimiento de tratamientos</b><br><small>86 tratamientos activos en el sistema.</small></p>
+    `;
+}
 
 /**
  * @returns {string} Formato: "30 de agosto"
@@ -52,6 +94,9 @@ function updateTodayDate() {
     }
 }
 
+/**
+ * Titulos
+ */
 const VIEW_TITLES = {
     'Resumen': ['Buenos días, Juan.', 'Aquí tienes el estado de tus tratamientos.'],
     'Mis tratamientos': ['Tus tratamientos', 'Consulta tus medicamentos, horarios y duración.'],
@@ -75,7 +120,6 @@ function generateTreatmentsContent() {
         <section class="card">
             <div class="card-header">
                 <div><h2>Tratamientos activos</h2><p>Medicamentos asociados a tu plan actual</p></div>
-                <button class="primary">+ Nuevo tratamiento</button>
             </div>
             <div class="treatment-list">
                 <div class="treatment">
@@ -106,9 +150,9 @@ function generateTreatmentsContent() {
 
 function generateDosisStats() {
     return `
-        <div class="stat"><label>Dosis programadas</label><strong>04 <em>hoy</em></strong></div>
-        <div class="stat"><label>Dosis tomadas</label><strong>03 <em>correctas</em></strong></div>
-        <div class="stat"><label>Dosis retrasadas</label><strong>01 <em style="color:var(--orange)">revisar</em></strong></div>
+        <div class="stat"><label>Dosis programadas</label><strong>${String(dailyDoses.total).padStart(2, '0')} <em>hoy</em></strong></div>
+        <div class="stat"><label>Dosis tomadas</label><strong>${String(dailyDoses.taken).padStart(2, '0')} <em>correctas</em></strong></div>
+        <div class="stat"><label>Dosis retrasadas</label><strong>${String(dailyDoses.total - dailyDoses.taken).padStart(2, '0')} <em style="color:var(--orange)">revisar</em></strong></div>
         <div class="stat"><label>Dosis omitidas</label><strong>00 <em>excelente</em></strong></div>
     `.trim();
 }
@@ -129,8 +173,8 @@ function generateDosisContent() {
                 <div class="treatment">
                     <div class="medicine"><span class="medicine-icon" style="background:#fff1d9;color:#be7a10">M</span>Metformina 850 mg</div>
                     <div class="dose">20:00 · 1 comprimido</div>
-                    <div class="status warning">Pendiente</div>
-                    <button class="primary">Registrar</button>
+                    <div class="status ${dailyDoses.metforminTaken ? '' : 'warning'}" data-dose-status="Metformina">${dailyDoses.metforminTaken ? 'Tomada' : 'Pendiente'}</div>
+                    <button class="primary" data-action="register-dose" ${dailyDoses.metforminTaken ? 'disabled' : ''}>${dailyDoses.metforminTaken ? '✓ Registrada' : 'Registrar'}</button>
                 </div>
             </div>
         </section>
@@ -161,26 +205,19 @@ function generateMedicamentosContent() {
         <section class="card">
             <div class="card-header">
                 <div><h2>Catálogo de medicamentos</h2><p>Existencias y fechas de vencimiento</p></div>
-                <button class="primary">+ Añadir medicamento</button>
             </div>
             <div class="treatment-list">
                 <div class="treatment">
                     <div class="medicine"><span class="medicine-icon">L</span>Losartán · 50 mg</div>
                     <div class="dose">Comprimidos · stock 24</div>
-                    <div class="status">Vence 10/2027</div>
+                    <div class="status">Vence 15/10/2027</div>
                     <button class="link" data-detail="Losartán · 50 mg">Detalle</button>
                 </div>
                 <div class="treatment">
                     <div class="medicine"><span class="medicine-icon" style="background:#fff1d9;color:#be7a10">M</span>Metformina · 850 mg</div>
                     <div class="dose">Comprimidos · stock 12</div>
-                    <div class="status warning">Vence 11/2026</div>
+                    <div class="status warning">Vence 15/11/2026</div>
                     <button class="link" data-detail="Metformina · 850 mg">Detalle</button>
-                </div>
-                <div class="treatment">
-                    <div class="medicine"><span class="medicine-icon" style="background:#fde3df;color:#c95b4b">R</span>Rivaroxabán · 20 mg</div>
-                    <div class="dose">Comprimidos · stock 06</div>
-                    <div class="status warning">Vence 09/2026</div>
-                    <button class="link" data-detail="Rivaroxabán · 20 mg">Detalle</button>
                 </div>
             </div>
         </section>
@@ -197,24 +234,26 @@ function generateMedicamentosContent() {
 }
 
 function generateAlertasStats() {
+    const activeAlerts = Number(!alertState.doseResolved) + Number(!alertState.stockResolved);
     return `
-        <div class="stat"><label>Alertas activas</label><strong>02 <em style="color:var(--orange)">pendientes</em></strong></div>
-        <div class="stat"><label>Stock bajo</label><strong>01 <em>medicamento</em></strong></div>
-        <div class="stat"><label>Dosis atrasadas</label><strong>01 <em style="color:var(--red)">revisar</em></strong></div>
+        <div class="stat"><label>Alertas activas</label><strong>${String(activeAlerts).padStart(2, '0')} <em style="color:var(--orange)">pendientes</em></strong></div>
+        <div class="stat"><label>Stock bajo</label><strong>${alertState.stockResolved ? '00' : '01'} <em>medicamento</em></strong></div>
+        <div class="stat"><label>Dosis atrasadas</label><strong>${alertState.doseResolved ? '00' : '01'} <em style="color:var(--red)">revisar</em></strong></div>
         <div class="stat"><label>Todo en orden</label><strong>06 <em>reglas</em></strong></div>
     `.trim();
 }
 
 function generateAlertasContent() {
+    const allResolved = alertState.doseResolved && alertState.stockResolved;
     return `
         <section class="card">
             <div class="card-header">
                 <div><h2>Centro de alertas</h2><p>Avisos generados por tu seguimiento</p></div>
-                <button class="link">Marcar todas como leídas</button>
+                <button class="link" data-action="resolve-all-alerts" ${allResolved ? 'disabled' : ''}>${allResolved ? '✓ Todas resueltas' : 'Marcar todas como leídas'}</button>
             </div>
             <div class="alert-list">
-                <div class="alert"><i class="dot red"></i><div><b>Dosis atrasada</b><small>Metformina 850 mg · no registrada ayer a las 20:00</small></div><button class="link">Resolver</button></div>
-                <div class="alert"><i class="dot"></i><div><b>Stock bajo</b><small>Losartán 50 mg · quedan 12 días de tratamiento</small></div><button class="link">Revisar</button></div>
+                <div class="alert ${alertState.doseResolved ? 'alert-resolved' : ''}" data-alert="dose"><i class="dot ${alertState.doseResolved ? 'green' : 'red'}"></i><div><b>Dosis atrasada</b><small>Metformina 850 mg · no registrada ayer a las 20:00</small></div><button class="link" data-action="resolve-alert" data-alert="dose" ${alertState.doseResolved ? 'disabled' : ''}>${alertState.doseResolved ? '✓ Resuelta' : 'Resolver'}</button></div>
+                <div class="alert ${alertState.stockResolved ? 'alert-resolved' : ''}" data-alert="stock"><i class="dot ${alertState.stockResolved ? 'green' : ''}"></i><div><b>Stock bajo</b><small>Losartán 50 mg · quedan 12 días de tratamiento</small></div><button class="link" data-action="resolve-alert" data-alert="stock" ${alertState.stockResolved ? 'disabled' : ''}>${alertState.stockResolved ? '✓ Resuelta' : 'Revisar'}</button></div>
                 <div class="alert"><i class="dot green"></i><div><b>Sin nuevas incidencias</b><small>La sincronización se completó hace 2 horas</small></div></div>
             </div>
         </section>
@@ -301,6 +340,8 @@ function updateView(viewName) {
     if (currentRole === 'administrador' && viewName !== 'Administración') return;
     if (currentRole !== 'administrador' && viewName === 'Administración') return;
 
+    currentView = viewName;
+
     // Actualizar encabezado de navegación
     DOM.header.crumb.innerHTML = `MEDCONTROL / <strong>${viewName.toUpperCase()}</strong>`;
     
@@ -312,9 +353,111 @@ function updateView(viewName) {
     if (viewName === 'Resumen') {
         DOM.content.stats.innerHTML = ORIGINAL_STATE.stats;
         DOM.content.grid.innerHTML = ORIGINAL_STATE.content;
+        updateSummaryDoseUI();
+        updateSummaryAlertUI();
+    } else if (viewName === 'Dosis') {
+        DOM.content.stats.innerHTML = generateDosisStats();
+        DOM.content.grid.innerHTML = generateDosisContent();
+    } else if (viewName === 'Alertas') {
+        DOM.content.stats.innerHTML = generateAlertasStats();
+        DOM.content.grid.innerHTML = generateAlertasContent();
     } else {
         DOM.content.stats.innerHTML = PANEL_CONTENT[viewName].stats;
         DOM.content.grid.innerHTML = PANEL_CONTENT[viewName].content;
+    }
+
+    setupAlertActions();
+}
+
+function setupAlertActions() {
+    const resolveAllButton = DOM.content.grid.querySelector('[data-action="resolve-all-alerts"]');
+    if (resolveAllButton) {
+        resolveAllButton.addEventListener('click', resolveAllAlerts);
+    }
+
+    DOM.content.grid.querySelectorAll('[data-action="resolve-alert"]').forEach(button => {
+        button.addEventListener('click', () => resolveAlert(button.dataset.alert));
+    });
+}
+
+function updateSummaryAlertUI() {
+    const alertCount = document.querySelector('#summary-alert-count');
+    if (alertCount) {
+        const activeAlerts = Number(!alertState.doseResolved) + Number(!alertState.stockResolved);
+        alertCount.innerHTML = `${String(activeAlerts).padStart(2, '0')} <em style="color:var(--orange)">${activeAlerts ? 'revisar' : 'resueltas'}</em>`;
+    }
+
+    [
+        { id: 'dose', resolved: alertState.doseResolved },
+        { id: 'stock', resolved: alertState.stockResolved }
+    ].forEach(({ id, resolved }) => {
+        const alert = document.querySelector(`[data-summary-alert="${id}"]`);
+        if (!alert) return;
+
+        alert.classList.toggle('alert-resolved', resolved);
+        alert.querySelector('.dot').classList.toggle('green', resolved);
+        alert.querySelector('.dot').classList.toggle('red', id === 'dose' && !resolved);
+        alert.querySelector('b').textContent = id === 'dose' ? 'Dosis atrasada' : 'Stock bajo';
+        alert.querySelector('small').textContent = resolved
+            ? 'Alerta resuelta'
+            : id === 'dose'
+                ? 'Metformina · ayer a las 20:00'
+                : 'Losartán · quedan 12 días';
+        if (resolved) {
+            alert.querySelector('b').textContent += ' · Resuelta';
+        }
+    });
+}
+
+function updateSummaryDoseUI() {
+    const count = document.querySelector('#doses-today-count');
+    if (count) {
+        count.innerHTML = `${dailyDoses.taken} <em>de ${dailyDoses.total}</em>`;
+    }
+
+    const status = document.querySelector('.treatment [data-dose-status="Metformina"]');
+    if (status) {
+        status.textContent = dailyDoses.metforminTaken ? 'Tomada hoy' : 'Pendiente';
+        status.classList.toggle('warning', !dailyDoses.metforminTaken);
+    }
+
+    const button = document.querySelector('#dose-button');
+    if (button && dailyDoses.metforminTaken) {
+        button.textContent = '✓ Dosis registrada';
+        button.disabled = true;
+    }
+}
+
+function registerScheduledDose() {
+    if (currentRole !== 'usuario' || dailyDoses.metforminTaken || dailyDoses.taken >= dailyDoses.total) return;
+
+    dailyDoses.metforminTaken = true;
+    dailyDoses.taken += 1;
+    updateView(currentView);
+}
+
+function resolveAlert(alertId) {
+    if (alertId === 'dose') {
+        alertState.doseResolved = true;
+    } else if (alertId === 'stock') {
+        alertState.stockResolved = true;
+    }
+
+    updateView(currentView);
+    refreshNotificationPanel();
+}
+
+function resolveAllAlerts() {
+    alertState.doseResolved = true;
+    alertState.stockResolved = true;
+    updateView(currentView);
+    refreshNotificationPanel();
+}
+
+function refreshNotificationPanel() {
+    const { utilityPanel } = DOM.header;
+    if (!utilityPanel.hidden && utilityPanel.dataset.type === 'notifications') {
+        utilityPanel.innerHTML = renderRoleNotifications();
     }
 }
 
@@ -335,16 +478,22 @@ function setupNavigation() {
     });
 }
 
-function showApplication(role) {
+function showApplication(role, userName = null) {
     currentRole = role;
+    DOM.header.utilityPanel.hidden = true;
+    DOM.header.utilityPanel.replaceChildren();
+    delete DOM.header.utilityPanel.dataset.type;
     DOM.login.screen.hidden = true;
     document.querySelector('#app').hidden = false;
     DOM.nav.items.forEach(item => {
         const isAdminItem = item.dataset.role === 'admin';
         item.hidden = role === 'administrador' ? !isAdminItem : isAdminItem;
     });
-    DOM.login.profileAvatar.textContent = role === 'administrador' ? 'AD' : 'JC';
-    DOM.login.profileName.textContent = role === 'administrador' ? 'Administrador' : 'Juan Carlos';
+    const profileName = role === 'administrador' ? 'Administrador' : (userName || 'Juan Carlos');
+    DOM.login.profileAvatar.textContent = role === 'administrador'
+        ? 'AD'
+        : profileName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
+    DOM.login.profileName.textContent = profileName;
     DOM.login.profileRole.textContent = role === 'administrador' ? 'Administrador' : 'Usuario';
 
     const initialView = role === 'administrador' ? 'Administración' : 'Resumen';
@@ -355,26 +504,161 @@ function showApplication(role) {
 }
 
 function setupLogin() {
+    const demoAccounts = {
+        'usuario@medcontrol.demo': { password: 'usuario123', role: 'usuario', name: 'Juan Carlos' },
+        'admin@medcontrol.demo': { password: 'admin123', role: 'administrador' }
+    };
+
+    const readRegisteredAccounts = () => {
+        const savedAccounts = localStorage.getItem('medcontrol-users');
+        if (!savedAccounts) return [];
+
+        const accounts = JSON.parse(savedAccounts);
+        if (!Array.isArray(accounts)) {
+            throw new Error('El registro de usuarios guardado no tiene un formato válido.');
+        }
+        return accounts;
+    };
+
+    const showLoginError = (element, message) => {
+        element.textContent = message;
+        element.hidden = false;
+    };
+
+    const formatPhone = value => {
+        let digits = value.replace(/\D/g, '');
+        if (digits.startsWith('56') && digits.length === 11) {
+            digits = digits.slice(2);
+        }
+        if (digits.length !== 9 || !digits.startsWith('9')) return null;
+        return `${digits[0]} ${digits.slice(1, 5)} ${digits.slice(5)}`;
+    };
+
+    const formatRut = value => {
+        const cleaned = value.replace(/[^0-9kK]/g, '').toUpperCase();
+        if (cleaned.length < 2) return null;
+
+        const body = cleaned.slice(0, -1);
+        const verifier = cleaned.slice(-1);
+        if (!/^\d{7,8}$/.test(body) || !/^[0-9K]$/.test(verifier)) return null;
+
+        const groupedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return `${groupedBody}-${verifier}`;
+    };
+
+    const showLoginForm = () => {
+        DOM.login.intro.hidden = false;
+        DOM.login.form.hidden = false;
+        DOM.login.registerToggle.hidden = false;
+        DOM.login.registerForm.hidden = true;
+        DOM.login.demoCredentials.hidden = false;
+        DOM.login.error.hidden = true;
+        DOM.login.registerError.hidden = true;
+    };
+
+    DOM.login.registerToggle.addEventListener('click', () => {
+        DOM.login.intro.hidden = true;
+        DOM.login.form.hidden = true;
+        DOM.login.registerToggle.hidden = true;
+        DOM.login.registerForm.hidden = false;
+        DOM.login.demoCredentials.hidden = true;
+        DOM.login.registerError.hidden = true;
+    });
+
+    DOM.login.loginToggle.addEventListener('click', showLoginForm);
+    DOM.login.registerPhone.addEventListener('blur', () => {
+        const formattedPhone = formatPhone(DOM.login.registerPhone.value);
+        if (formattedPhone) DOM.login.registerPhone.value = formattedPhone;
+    });
+    DOM.login.registerRut.addEventListener('blur', () => {
+        const formattedRut = formatRut(DOM.login.registerRut.value);
+        if (formattedRut) DOM.login.registerRut.value = formattedRut;
+    });
+    DOM.login.registerForm.addEventListener('input', () => {
+        DOM.login.registerError.hidden = true;
+    });
+
     DOM.login.form.addEventListener('submit', event => {
         event.preventDefault();
 
         const email = DOM.login.email.value.trim().toLowerCase();
         const password = DOM.login.password.value;
-        const accounts = {
-            'usuario@medcontrol.demo': { password: 'usuario123', role: 'usuario' },
-            'admin@medcontrol.demo': { password: 'admin123', role: 'administrador' }
-        };
-        const account = accounts[email];
+        let account = demoAccounts[email];
+
+        try {
+            const registeredAccount = readRegisteredAccounts().find(item => item.email === email);
+            if (!account && registeredAccount) {
+                account = { ...registeredAccount, role: 'usuario' };
+            }
+        } catch (error) {
+            showLoginError(DOM.login.error, `No se pudieron leer las cuentas guardadas: ${error.message}`);
+            return;
+        }
 
         if (!account || account.password !== password) {
-            DOM.login.error.textContent = 'El correo o la contraseña son incorrectos.';
-            DOM.login.error.hidden = false;
+            showLoginError(DOM.login.error, 'El correo o la contraseña son incorrectos.');
             return;
         }
 
         DOM.login.error.hidden = true;
         DOM.login.password.value = '';
-        showApplication(account.role);
+        showApplication(account.role, account.name);
+    });
+
+    DOM.login.registerForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const name = DOM.login.registerName.value.trim();
+        const email = DOM.login.registerEmail.value.trim().toLowerCase();
+        const phone = formatPhone(DOM.login.registerPhone.value);
+        const rut = formatRut(DOM.login.registerRut.value);
+        const password = DOM.login.registerPassword.value;
+        const passwordConfirm = DOM.login.registerPasswordConfirm.value;
+
+        if (!name) {
+            showLoginError(DOM.login.registerError, 'Ingresa tu nombre completo.');
+            return;
+        }
+
+        if (!phone) {
+            showLoginError(DOM.login.registerError, 'Ingresa un teléfono celular chileno válido, por ejemplo 9 7556 8821.');
+            return;
+        }
+
+        if (!rut) {
+            showLoginError(DOM.login.registerError, 'Ingresa un RUT válido en formato chileno, por ejemplo 12.893.969-K.');
+            return;
+        }
+
+        if (password !== passwordConfirm) {
+            showLoginError(DOM.login.registerError, 'Las contraseñas no coinciden.');
+            return;
+        }
+
+        if (demoAccounts[email]) {
+            showLoginError(DOM.login.registerError, 'Ese correo ya está reservado para una cuenta de demostración.');
+            return;
+        }
+
+        try {
+            const accounts = readRegisteredAccounts();
+            if (accounts.some(account => account.email === email)) {
+                showLoginError(DOM.login.registerError, 'Ya existe una cuenta registrada con ese correo.');
+                return;
+            }
+
+            DOM.login.registerPhone.value = phone;
+            DOM.login.registerRut.value = rut;
+            accounts.push({ name, email, phone, rut, password });
+            localStorage.setItem('medcontrol-users', JSON.stringify(accounts));
+        } catch (error) {
+            showLoginError(DOM.login.registerError, `No se pudo guardar la cuenta: ${error.message}`);
+            return;
+        }
+
+        DOM.login.registerForm.reset();
+        DOM.login.registerError.hidden = true;
+        showApplication('usuario', name);
     });
 
     DOM.login.form.addEventListener('input', () => {
@@ -383,7 +667,12 @@ function setupLogin() {
 
     DOM.login.logoutButton.addEventListener('click', () => {
         currentRole = null;
+        DOM.header.utilityPanel.hidden = true;
+        DOM.header.utilityPanel.replaceChildren();
+        delete DOM.header.utilityPanel.dataset.type;
         DOM.login.form.reset();
+        DOM.login.registerForm.reset();
+        showLoginForm();
         DOM.login.error.hidden = true;
         DOM.login.screen.hidden = false;
         document.querySelector('#app').hidden = true;
@@ -399,6 +688,7 @@ function toggleUtilityPanel(type) {
     const { utilityPanel } = DOM.header;
     
     if (!utilityPanel) return; // Salir si el panel no existe
+    if (type === 'notifications' && currentRole !== 'usuario' && currentRole !== 'administrador') return;
     
     const isSamePanel = !utilityPanel.hidden && utilityPanel.dataset.type === type;
     
@@ -409,7 +699,7 @@ function toggleUtilityPanel(type) {
 
     utilityPanel.dataset.type = type;
     utilityPanel.innerHTML = type === 'notifications'
-        ? '<h3>Notificaciones</h3><p><b>Dosis atrasada</b><br><small>Metformina · ayer a las 20:00</small></p><p><b>Stock bajo</b><br><small>Losartán · quedan 12 días</small></p>'
+        ? renderRoleNotifications()
         : '<h3>Configuración</h3><label><input type="checkbox" checked> Recordatorios de dosis</label><label><input type="checkbox" checked> Alertas de stock</label>';
     
     utilityPanel.hidden = false;
@@ -446,7 +736,7 @@ function renderMedicineDetail(detailName) {
             lines: [
                 '<b>Presentación</b><br><small>Comprimidos · 30 unidades</small>',
                 '<b>Horario</b><br><small>08:00 · cada 24 h</small>',
-                '<b>Stock</b><br><small>24 unidades · vence 10/2027</small>'
+                '<b>Stock</b><br><small>24 unidades · vence 15/10/2027</small>'
             ]
         },
         'Metformina · 850 mg': {
@@ -454,17 +744,9 @@ function renderMedicineDetail(detailName) {
             lines: [
                 '<b>Presentación</b><br><small>Comprimidos · 60 unidades</small>',
                 '<b>Horario</b><br><small>20:00 · cada 24 h</small>',
-                '<b>Stock</b><br><small>12 unidades · vence 11/2026</small>'
+                '<b>Stock</b><br><small>12 unidades · vence 15/11/2026</small>'
             ]
         },
-        'Rivaroxabán · 20 mg': {
-            title: 'Rivaroxabán 20 mg',
-            lines: [
-                '<b>Presentación</b><br><small>Comprimidos · 28 unidades</small>',
-                '<b>Horario</b><br><small>20:00 · según indicación médica</small>',
-                '<b>Stock</b><br><small>6 unidades · vence 09/2026</small>'
-            ]
-        }
     };
 
     const detail = details[detailName] || {
@@ -494,8 +776,13 @@ function resolveDetailName(button) {
 
 function handleActionButtonClick(event) {
     const button = event.target.closest('.link, .primary');
-    if (!button || button.id === 'dose-button') return;
+    if (!button) return;
+    if (button.classList.contains('login-register-toggle')) return;
 
+    if (button.dataset.action === 'register-dose') {
+        registerScheduledDose();
+        return;
+    }
     const label = button.textContent.trim().toLowerCase();
 
     if (label.includes('ver todas')) {
@@ -525,13 +812,7 @@ function handleActionButtonClick(event) {
         return;
     }
 
-    if (label.includes('resolver') || label.includes('revisar')) {
-        button.textContent = '✓ Revisado';
-        button.style.color = '#167d52';
-        return;
-    }
-
-    if (label.includes('nuevo tratamiento') || label.includes('añadir medicamento') || label.includes('registrar')) {
+    if (label.includes('nuevo tratamiento') || label.includes('registrar')) {
         button.textContent = '✓ Enviado';
         button.style.opacity = '0.9';
     }
@@ -539,31 +820,33 @@ function handleActionButtonClick(event) {
 
 let actionHandlersBound = false;
 
+function handleTreatmentFilterChange(event) {
+    const filter = event.target;
+    if (!(filter instanceof HTMLSelectElement) || filter.id !== 'filter') return;
+
+    const card = filter.closest('.card');
+    const treatmentList = card?.querySelector('.treatment-list');
+    if (!card || !treatmentList) return;
+
+    const pendingOnly = filter.value === 'Pendiente';
+    const treatments = treatmentList.querySelectorAll('.treatment');
+    treatments.forEach(treatment => {
+        const status = treatment.querySelector('.status')?.textContent.trim();
+        treatment.hidden = pendingOnly && status !== 'Pendiente';
+    });
+
+    const cardTitle = card.querySelector('h2');
+    if (cardTitle) {
+        cardTitle.textContent = filter.value === 'Todos los tratamientos'
+            ? 'Mis tratamientos'
+            : filter.value;
+    }
+}
+
 function setupSpecialButtons() {
-    // Botón para registrar dosis
-    const doseButton = document.querySelector('#dose-button');
-    if (doseButton) {
-        doseButton.addEventListener('click', event => {
-            event.target.textContent = '✓ Dosis registrada';
-            event.target.style.background = '#167d52';
-        });
-    }
-
-    // Filtro de tratamientos
-    const filter = document.querySelector('#filter');
-    if (filter) {
-        filter.addEventListener('change', event => {
-            const cardTitle = document.querySelector('.card h2');
-            if (cardTitle) {
-                cardTitle.textContent = event.target.value === 'Todos los tratamientos'
-                    ? 'Mis tratamientos'
-                    : event.target.value;
-            }
-        });
-    }
-
     if (!actionHandlersBound) {
         document.addEventListener('click', handleActionButtonClick);
+        document.addEventListener('change', handleTreatmentFilterChange);
         actionHandlersBound = true;
     }
 }
