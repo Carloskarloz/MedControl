@@ -54,6 +54,13 @@ const alertState = {
     doseResolved: false,
     stockResolved: false
 };
+const pharmacyInventory = [
+    { id: 'losartan', name: 'Losartán 50 mg', form: 'Comprimidos', stock: 24, minimum: 20, expiry: '15/10/2027' },
+    { id: 'metformin', name: 'Metformina 850 mg', form: 'Comprimidos', stock: 12, minimum: 20, expiry: '15/11/2026' }
+];
+const pharmacyMovements = { received: 0, dispensed: 0 };
+let pharmacyNotice = '';
+let pharmacyNoticeType = 'success';
 
 function renderRoleNotifications() {
     if (currentRole === 'usuario') {
@@ -66,6 +73,16 @@ function renderRoleNotifications() {
         }
 
         return `<h3>Notificaciones</h3>${notifications.join('') || '<p><b>Todo resuelto</b><br><small>No tienes alertas pendientes.</small></p>'}`;
+    }
+
+    if (currentRole === 'farmacia') {
+        const lowStock = pharmacyInventory.filter(item => item.stock <= item.minimum);
+        return `
+            <h3>Alertas de farmacia</h3>
+            ${lowStock.length
+                ? lowStock.map(item => `<p><b>Stock bajo</b><br><small>${item.name} · ${item.stock} unidades</small></p>`).join('')
+                : '<p><b>Inventario al día</b><br><small>No hay medicamentos bajo el mínimo.</small></p>'}
+        `;
     }
 
     return `
@@ -103,7 +120,16 @@ const VIEW_TITLES = {
     'Dosis': ['Seguimiento de dosis', 'Registra cada toma y mejora tu adherencia.'],
     'Medicamentos': ['Tus medicamentos', 'Consulta disponibilidad, stock y vencimientos.'],
     'Alertas': ['Alertas y recordatorios', 'Revisa los avisos importantes de tu tratamiento.'],
-    'Administración': ['Panel de administración', 'Gestiona usuarios, tratamientos y alertas del sistema.']
+    'Administración': ['Panel de administración', 'Gestiona usuarios, tratamientos y alertas del sistema.'],
+    'Farmacia': ['Resumen de farmacia', 'Supervisa existencias, vencimientos y movimientos.'],
+    'Inventario': ['Inventario de medicamentos', 'Controla existencias, mínimos y fechas de vencimiento.'],
+    'Dispensación': ['Registro de dispensación', 'Registra la salida de medicamentos del inventario.']
+};
+
+const ROLE_VIEWS = {
+    usuario: ['Resumen', 'Mis tratamientos', 'Dosis', 'Medicamentos', 'Alertas'],
+    administrador: ['Administración'],
+    farmacia: ['Farmacia', 'Inventario', 'Dispensación']
 };
 
 function generateTreatmentsStats() {
@@ -303,6 +329,139 @@ function generateAdminContent() {
     `.trim();
 }
 
+function getPharmacyExpiryDays(item) {
+    const [day, month, year] = item.expiry.split('/').map(Number);
+    const expiryDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.ceil((expiryDate - today) / 86400000);
+}
+
+function getPharmacyLowStock() {
+    return pharmacyInventory.filter(item => item.stock <= item.minimum);
+}
+
+function generatePharmacyStats() {
+    const totalUnits = pharmacyInventory.reduce((total, item) => total + item.stock, 0);
+    const lowStock = getPharmacyLowStock().length;
+    const expiring = pharmacyInventory.filter(item => {
+        const days = getPharmacyExpiryDays(item);
+        return days >= 0 && days <= 30;
+    }).length;
+
+    return `
+        <div class="stat"><label>Unidades disponibles</label><strong>${totalUnits} <em>en inventario</em></strong></div>
+        <div class="stat"><label>Stock bajo</label><strong>${String(lowStock).padStart(2, '0')} <em style="color:var(--orange)">medicamentos</em></strong></div>
+        <div class="stat"><label>Por vencer</label><strong>${String(expiring).padStart(2, '0')} <em style="color:var(--red)">en 30 días</em></strong></div>
+        <div class="stat"><label>Movimientos hoy</label><strong>${pharmacyMovements.received + pharmacyMovements.dispensed} <em>registrados</em></strong></div>
+    `.trim();
+}
+
+function generatePharmacyContent() {
+    const lowStock = getPharmacyLowStock();
+    const expiring = pharmacyInventory.filter(item => {
+        const days = getPharmacyExpiryDays(item);
+        return days >= 0 && days <= 30;
+    });
+
+    return `
+        <section class="card">
+            <div class="card-header">
+                <div><h2>Estado del inventario</h2><p>Revisión de existencias y vencimientos</p></div>
+            </div>
+            <div class="alert-list">
+                ${lowStock.length
+                    ? lowStock.map(item => `<div class="alert"><i class="dot red"></i><div><b>${item.name} · stock bajo</b><small>${item.stock} unidades disponibles · mínimo ${item.minimum}</small></div></div>`).join('')
+                    : '<div class="alert"><i class="dot green"></i><div><b>Stock suficiente</b><small>No hay medicamentos bajo el mínimo.</small></div></div>'}
+                ${expiring.length
+                    ? expiring.map(item => `<div class="alert"><i class="dot"></i><div><b>${item.name} · próximo a vencer</b><small>Vence el ${item.expiry}</small></div></div>`).join('')
+                    : '<div class="alert"><i class="dot green"></i><div><b>Vencimientos al día</b><small>No hay medicamentos por vencer en los próximos 30 días.</small></div></div>'}
+            </div>
+        </section>
+        <div class="side">
+            <section class="card">
+                <div class="card-header"><div><h2>Operaciones</h2><p>Accesos rápidos de farmacia</p></div></div>
+                <div class="actions pharmacy-actions">
+                    <button class="primary" data-action="navigate" data-view="Inventario">Gestionar inventario</button>
+                    <button class="link" data-action="navigate" data-view="Dispensación">Registrar dispensación</button>
+                </div>
+            </section>
+            <section class="card">
+                <div class="card-header"><div><h2>Movimientos de hoy</h2><p>Actividad de esta sesión de demostración</p></div></div>
+                <div class="weeks">
+                    <div class="week"><span>Entradas registradas</span><b>${pharmacyMovements.received} unidades</b></div>
+                    <div class="week"><span>Unidades dispensadas</span><b>${pharmacyMovements.dispensed} unidades</b></div>
+                </div>
+            </section>
+        </div>
+    `.trim();
+}
+
+function generatePharmacyInventoryContent() {
+    return `
+        <section class="card">
+            <div class="card-header">
+                <div><h2>Existencias</h2><p>Registra entradas de medicamentos y revisa sus vencimientos</p></div>
+            </div>
+            <div class="treatment-list">
+                ${pharmacyInventory.map(item => `
+                    <div class="treatment pharmacy-inventory-row">
+                        <div class="medicine"><span class="medicine-icon">${item.name.charAt(0)}</span>${item.name}</div>
+                        <div class="dose">${item.form} · ${item.stock} unidades</div>
+                        <div class="status ${item.stock <= item.minimum ? 'warning' : ''}">Vence ${item.expiry}</div>
+                        <div class="pharmacy-restock">
+                            <label>Entrada
+                                <input class="field" type="number" min="1" step="1" value="10" aria-label="Unidades para reponer ${item.name}">
+                            </label>
+                            <button class="primary" data-action="restock" data-medication="${item.id}">Reponer</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <p class="pharmacy-feedback ${pharmacyNoticeType === 'error' ? 'error' : ''}" role="status" aria-live="polite">${pharmacyNotice}</p>
+        </section>
+        <div class="side">
+            <section class="card">
+                <div class="card-header"><div><h2>Mínimos de inventario</h2><p>Umbral para alertas de reposición</p></div></div>
+                <div class="weeks">
+                    ${pharmacyInventory.map(item => `<div class="week"><span>${item.name}</span><b>${item.minimum} unidades</b></div>`).join('')}
+                </div>
+            </section>
+        </div>
+    `.trim();
+}
+
+function generatePharmacyDispensingContent() {
+    return `
+        <section class="card">
+            <div class="card-header">
+                <div><h2>Nueva salida de inventario</h2><p>Selecciona el medicamento y registra las unidades dispensadas</p></div>
+            </div>
+            <form class="pharmacy-dispense-form" data-form="dispense">
+                <label>Medicamento
+                    <select class="field" id="pharmacy-medication" name="medication" required>
+                        ${pharmacyInventory.map(item => `<option value="${item.id}" ${item.stock === 0 ? 'disabled' : ''}>${item.name} · ${item.stock} disponibles</option>`).join('')}
+                    </select>
+                </label>
+                <label>Unidades a dispensar
+                    <input class="field" id="pharmacy-quantity" name="quantity" type="number" min="1" max="${pharmacyInventory.find(item => item.stock > 0)?.stock || 0}" step="1" value="1" required>
+                </label>
+                <button class="primary" type="submit" ${pharmacyInventory.every(item => item.stock === 0) ? 'disabled' : ''}>Registrar salida</button>
+                <p class="pharmacy-feedback ${pharmacyNoticeType === 'error' ? 'error' : ''}" id="pharmacy-feedback" role="status" aria-live="polite">${pharmacyNotice}</p>
+            </form>
+        </section>
+        <div class="side">
+            <section class="card">
+                <div class="card-header"><div><h2>Resumen de movimientos</h2><p>Movimientos realizados en esta sesión</p></div></div>
+                <div class="weeks">
+                    <div class="week"><span>Entradas</span><b>${pharmacyMovements.received} unidades</b></div>
+                    <div class="week"><span>Salidas dispensadas</span><b>${pharmacyMovements.dispensed} unidades</b></div>
+                </div>
+            </section>
+        </div>
+    `.trim();
+}
+
 const PANEL_CONTENT = {
     'Mis tratamientos': {
         stats: generateTreatmentsStats(),
@@ -323,6 +482,18 @@ const PANEL_CONTENT = {
     'Administración': {
         stats: generateAdminStats(),
         content: generateAdminContent()
+    },
+    'Farmacia': {
+        stats: generatePharmacyStats(),
+        content: generatePharmacyContent()
+    },
+    'Inventario': {
+        stats: generatePharmacyStats(),
+        content: generatePharmacyInventoryContent()
+    },
+    'Dispensación': {
+        stats: generatePharmacyStats(),
+        content: generatePharmacyDispensingContent()
     }
 };
 
@@ -337,10 +508,10 @@ const ORIGINAL_STATE = {
  * @param {string} viewName - Nombre de la sección
  */
 function updateView(viewName) {
-    if (currentRole === 'administrador' && viewName !== 'Administración') return;
-    if (currentRole !== 'administrador' && viewName === 'Administración') return;
+    if (!ROLE_VIEWS[currentRole]?.includes(viewName)) return false;
 
     currentView = viewName;
+    DOM.content.grid.classList.toggle('pharmacy-inventory', viewName === 'Inventario');
 
     // Actualizar encabezado de navegación
     DOM.header.crumb.innerHTML = `MEDCONTROL / <strong>${viewName.toUpperCase()}</strong>`;
@@ -361,12 +532,20 @@ function updateView(viewName) {
     } else if (viewName === 'Alertas') {
         DOM.content.stats.innerHTML = generateAlertasStats();
         DOM.content.grid.innerHTML = generateAlertasContent();
+    } else if (viewName === 'Farmacia' || viewName === 'Inventario' || viewName === 'Dispensación') {
+        DOM.content.stats.innerHTML = generatePharmacyStats();
+        DOM.content.grid.innerHTML = viewName === 'Farmacia'
+            ? generatePharmacyContent()
+            : viewName === 'Inventario'
+                ? generatePharmacyInventoryContent()
+                : generatePharmacyDispensingContent();
     } else {
         DOM.content.stats.innerHTML = PANEL_CONTENT[viewName].stats;
         DOM.content.grid.innerHTML = PANEL_CONTENT[viewName].content;
     }
 
     setupAlertActions();
+    return true;
 }
 
 function setupAlertActions() {
@@ -467,13 +646,11 @@ function refreshNotificationPanel() {
 function setupNavigation() {
     DOM.nav.items.forEach(item => {
         item.addEventListener('click', () => {
-            // Actualizar estado activo
+            const viewName = item.dataset.view;
+            if (!updateView(viewName)) return;
+
             DOM.nav.items.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
-            
-            // Actualizar vista
-            const viewName = item.dataset.view;
-            updateView(viewName);
         });
     });
 }
@@ -486,17 +663,29 @@ function showApplication(role, userName = null) {
     DOM.login.screen.hidden = true;
     document.querySelector('#app').hidden = false;
     DOM.nav.items.forEach(item => {
-        const isAdminItem = item.dataset.role === 'admin';
-        item.hidden = role === 'administrador' ? !isAdminItem : isAdminItem;
+        const itemRole = item.dataset.role;
+        item.hidden = itemRole === 'admin'
+            ? role !== 'administrador'
+            : itemRole !== role;
     });
-    const profileName = role === 'administrador' ? 'Administrador' : (userName || 'Juan Carlos');
+    const profileName = role === 'administrador'
+        ? 'Administrador'
+        : role === 'farmacia'
+            ? 'Equipo de farmacia'
+            : userName || 'Juan Carlos';
     DOM.login.profileAvatar.textContent = role === 'administrador'
         ? 'AD'
-        : profileName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
+        : role === 'farmacia'
+            ? 'FA'
+            : profileName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase();
     DOM.login.profileName.textContent = profileName;
-    DOM.login.profileRole.textContent = role === 'administrador' ? 'Administrador' : 'Usuario';
+    DOM.login.profileRole.textContent = role === 'administrador'
+        ? 'Administrador'
+        : role === 'farmacia'
+            ? 'Farmacia'
+            : 'Usuario';
 
-    const initialView = role === 'administrador' ? 'Administración' : 'Resumen';
+    const initialView = ROLE_VIEWS[role]?.[0];
     const initialNav = document.querySelector(`.nav[data-view="${initialView}"]`);
     if (initialNav) {
         initialNav.click();
@@ -506,7 +695,8 @@ function showApplication(role, userName = null) {
 function setupLogin() {
     const demoAccounts = {
         'usuario@medcontrol.demo': { password: 'usuario123', role: 'usuario', name: 'Juan Carlos' },
-        'admin@medcontrol.demo': { password: 'admin123', role: 'administrador' }
+        'admin@medcontrol.demo': { password: 'admin123', role: 'administrador' },
+        'farmacia@medcontrol.demo': { password: 'farmacia123', role: 'farmacia' }
     };
 
     const readRegisteredAccounts = () => {
@@ -688,7 +878,7 @@ function toggleUtilityPanel(type) {
     const { utilityPanel } = DOM.header;
     
     if (!utilityPanel) return; // Salir si el panel no existe
-    if (type === 'notifications' && currentRole !== 'usuario' && currentRole !== 'administrador') return;
+    if (type === 'notifications' && currentRole !== 'usuario' && currentRole !== 'administrador' && currentRole !== 'farmacia') return;
     
     const isSamePanel = !utilityPanel.hidden && utilityPanel.dataset.type === type;
     
@@ -760,6 +950,68 @@ function renderMedicineDetail(detailName) {
     `;
 }
 
+function handlePharmacyRestock(button) {
+    if (currentRole !== 'farmacia') return;
+
+    const item = pharmacyInventory.find(medicine => medicine.id === button.dataset.medication);
+    const quantityInput = button.closest('.pharmacy-inventory-row')?.querySelector('input[type="number"]');
+    const quantity = Number(quantityInput?.value);
+    if (!item || !Number.isSafeInteger(quantity) || quantity <= 0) {
+        pharmacyNotice = 'Ingresa una cantidad válida de unidades para reponer.';
+        pharmacyNoticeType = 'error';
+        updateView(currentView);
+        return;
+    }
+
+    item.stock += quantity;
+    pharmacyMovements.received += quantity;
+    pharmacyNotice = `Entrada registrada: ${quantity} unidades de ${item.name}.`;
+    pharmacyNoticeType = 'success';
+    updateView(currentView);
+}
+
+function handlePharmacyDispensingSubmit(event) {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.dataset.form !== 'dispense') return;
+    event.preventDefault();
+    if (currentRole !== 'farmacia') return;
+
+    const item = pharmacyInventory.find(medicine => medicine.id === form.querySelector('#pharmacy-medication').value);
+    const quantity = Number(form.querySelector('#pharmacy-quantity').value);
+    if (!item || !Number.isSafeInteger(quantity) || quantity <= 0) {
+        pharmacyNotice = 'Ingresa una cantidad válida para dispensar.';
+        pharmacyNoticeType = 'error';
+        updateView(currentView);
+        return;
+    }
+    if (quantity > item.stock) {
+        pharmacyNotice = `Stock insuficiente: quedan ${item.stock} unidades de ${item.name}.`;
+        pharmacyNoticeType = 'error';
+        const feedback = form.querySelector('#pharmacy-feedback');
+        feedback.textContent = pharmacyNotice;
+        feedback.classList.add('error');
+        return;
+    }
+
+    item.stock -= quantity;
+    pharmacyMovements.dispensed += quantity;
+    pharmacyNotice = `Salida registrada: ${quantity} unidades de ${item.name}.`;
+    pharmacyNoticeType = 'success';
+    updateView(currentView);
+}
+
+function handlePharmacyMedicationChange(event) {
+    const select = event.target;
+    if (!(select instanceof HTMLSelectElement) || select.id !== 'pharmacy-medication') return;
+
+    const item = pharmacyInventory.find(medicine => medicine.id === select.value);
+    const quantityInput = document.querySelector('#pharmacy-quantity');
+    if (item && quantityInput) {
+        quantityInput.max = String(item.stock);
+        quantityInput.value = item.stock > 0 ? '1' : '0';
+    }
+}
+
 function resolveDetailName(button) {
     if (button.dataset.detail) {
         return button.dataset.detail;
@@ -779,6 +1031,16 @@ function handleActionButtonClick(event) {
     if (!button) return;
     if (button.classList.contains('login-register-toggle')) return;
 
+    if (button.dataset.action === 'restock') {
+        handlePharmacyRestock(button);
+        return;
+    }
+    if (button.dataset.action === 'navigate') {
+        if (currentRole !== 'farmacia') return;
+        const target = document.querySelector(`.nav[data-view="${button.dataset.view}"]`);
+        if (target) target.click();
+        return;
+    }
     if (button.dataset.action === 'register-dose') {
         registerScheduledDose();
         return;
@@ -847,6 +1109,8 @@ function setupSpecialButtons() {
     if (!actionHandlersBound) {
         document.addEventListener('click', handleActionButtonClick);
         document.addEventListener('change', handleTreatmentFilterChange);
+        document.addEventListener('change', handlePharmacyMedicationChange);
+        document.addEventListener('submit', handlePharmacyDispensingSubmit);
         actionHandlersBound = true;
     }
 }

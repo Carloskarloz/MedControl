@@ -493,6 +493,10 @@ header {
     gap: 16px;
 }
 
+.grid.pharmacy-inventory {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .card-header {
     display: flex;
     align-items: center;
@@ -724,6 +728,59 @@ header {
     font-size: 11px;
 }
 
+.pharmacy-restock {
+    display: flex;
+    align-items: end;
+    gap: 6px;
+}
+
+.pharmacy-restock label,
+.pharmacy-dispense-form label {
+    display: grid;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.pharmacy-restock input {
+    width: 75px;
+}
+
+.pharmacy-feedback {
+    min-height: 16px;
+    margin: 0 20px 16px;
+    color: var(--green);
+    font-size: 11px;
+}
+
+.pharmacy-feedback.error {
+    color: var(--red);
+}
+
+.pharmacy-dispense-form {
+    display: grid;
+    gap: 14px;
+    margin: 0 20px 20px;
+}
+
+.pharmacy-dispense-form .field {
+    width: 100%;
+}
+
+.pharmacy-dispense-form .primary {
+    justify-self: start;
+}
+
+.pharmacy-actions {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.primary:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
 /* En pantallas pequeñas la barra lateral se convierte en una navegación compacta. */
 @media (max-width: 900px) {
     .app {
@@ -874,5 +931,17 @@ header {
 
     .treatment .status {
         text-align: right;
+    }
+
+    .pharmacy-inventory-row {
+        grid-template-columns: 1fr;
+    }
+
+    .pharmacy-inventory-row .dose {
+        display: block;
+    }
+
+    .pharmacy-inventory-row .status {
+        text-align: left;
     }
 }

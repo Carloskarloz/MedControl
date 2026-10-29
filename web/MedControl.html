@@ -36,7 +36,7 @@
 
             <form id="register-form" hidden>
                 <h1>Registrar usuario</h1>
-                <p>Crea una cuenta personal con rol de usuario.</p>
+                <p>Crea tu cuenta personal.</p>
                 <label class="login-field">
                     Nombre completo
                     <input id="register-name" name="name" type="text" autocomplete="name" required>
@@ -70,6 +70,7 @@
                 <b>Accesos de demostración</b>
                 <small>Usuario: usuario@medcontrol.demo · usuario123</small>
                 <small>Administrador: admin@medcontrol.demo · admin123</small>
+                <small>Farmacia: farmacia@medcontrol.demo · farmacia123</small>
                 <small>Prototipo de demostración: no utiliza autenticación segura.</small>
             </div>
         </div>
@@ -87,23 +88,32 @@
             <div class="section-label">MENÚ PRINCIPAL</div>
 
             <nav>
-                <button class="nav active" data-view="Resumen">
+                <button class="nav active" data-view="Resumen" data-role="usuario">
                     <b>Resumen</b>
                 </button>
-                <button class="nav" data-view="Mis tratamientos">
+                <button class="nav" data-view="Mis tratamientos" data-role="usuario">
                     <b>Mis tratamientos</b>
                 </button>
-                <button class="nav" data-view="Dosis">
+                <button class="nav" data-view="Dosis" data-role="usuario">
                     <b>Seguimiento de dosis</b>
                 </button>
-                <button class="nav" data-view="Medicamentos">
+                <button class="nav" data-view="Medicamentos" data-role="usuario">
                     <b>Medicamentos</b>
                 </button>
-                <button class="nav" data-view="Alertas">
+                <button class="nav" data-view="Alertas" data-role="usuario">
                     <b>Alertas</b>
                 </button>
                 <button class="nav" data-view="Administración" data-role="admin" hidden>
                     <b>Gestión del sistema</b>
+                </button>
+                <button class="nav" data-view="Farmacia" data-role="farmacia" hidden>
+                    <b>Resumen de farmacia</b>
+                </button>
+                <button class="nav" data-view="Inventario" data-role="farmacia" hidden>
+                    <b>Inventario</b>
+                </button>
+                <button class="nav" data-view="Dispensación" data-role="farmacia" hidden>
+                    <b>Dispensación</b>
                 </button>
             </nav>
 
@@ -271,11 +281,11 @@
             </div>
 
             <p style="color:var(--muted);font-size:10px;margin-top:20px">
-                DATOS DE DEMOSTRACIÓN · MEDCONTROL TE AYUDA A ORGANIZAR TU TRATAMIENTO, PERO NO SUSTITUYE LA INDICACIÓN DE TU PROFESIONAL DE SALUD.
+                MEDCONTROL TE AYUDA A ORGANIZAR TU TRATAMIENTO BAJO LA INDICACIÓN DE TU PROFESIONAL DE SALUD.
             </p>
         </main>
     </div>
 
-    <script src="MedControl.js?v=20261026-user-registration-3"></script>
+    <script src="MedControl.js?v=20261029-pharmacy-role-1"></script>
 </body>
 </html>
